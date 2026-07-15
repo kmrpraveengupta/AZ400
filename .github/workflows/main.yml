@@ -11,4 +11,6 @@ jobs:
 
       - name: checkout Repo
         uses: actions/checkout@v5
+
+      - name: run file
         run: ls -la
