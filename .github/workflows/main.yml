@@ -8,3 +8,7 @@ jobs:
     steps:
       - name: say hello
         run: echo "Hello Praveen"
+
+      - name: checkout Repo
+        uses: actions/checkout@v5
+        run: ls -la
