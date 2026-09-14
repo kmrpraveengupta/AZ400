@@ -1,0 +1,61 @@
+name: Provision Azure Web App
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan_sku:
+        description: App Service plan SKU
+        required: true
+        default: B1
+        type: choice
+        options:
+          - F1
+          - B1
+          - B2
+          - B3
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_LOCATION: centralindia
+  AZURE_RESOURCE_GROUP: rg-az400-web
+  AZURE_WEBAPP_NAME: webiktest
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: azure
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure resource group exists
+        shell: bash
+        run: |
+          az group create \
+            --name "$AZURE_RESOURCE_GROUP" \
+            --location "$AZURE_LOCATION" \
+            --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Deploy App Service infrastructure
+        id: deployment
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az deployment group create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --template-file infra/main.bicep \
+              --parameters appName="$AZURE_WEBAPP_NAME" location="$AZURE_LOCATION" planSkuName="${{ inputs.plan_sku }}"
+
+      - name: Show Web App URL
+        run: |
+          echo "Web App: https://${AZURE_WEBAPP_NAME}.azurewebsites.net"
